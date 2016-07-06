@@ -1,5 +1,6 @@
 /*
- * RingBuffer is ... --todo.
+ * RingBuffer is a fixed-length-element and contiguous-block circular persistent buffer.
+ *
  * Copyright (C) 2016  Andreas Lüthi
  *
  * This program is free software: you can redistribute it and/or modify
@@ -25,7 +26,7 @@ import java.util.ArrayList;
 
 public class RingBuffer {
 
-    public static final String TEST_DAT_FILE = "test.dat";
+    public String dataFile;
     private long capacity;
     private long count;
     private long last;
@@ -35,10 +36,11 @@ public class RingBuffer {
     private RandomAccessFile raf;
 
 
-    public RingBuffer(long initCapacity) {
+    public RingBuffer(String dataFile, long initCapacity) {
+        this.dataFile = dataFile;
         capacity = initCapacity;
         try {
-            raf = new RandomAccessFile(TEST_DAT_FILE, "rw");
+            raf = new RandomAccessFile(this.dataFile, "rw");
             setCapacity(capacity);
             count = 0;
             last = 0;
@@ -50,10 +52,11 @@ public class RingBuffer {
         }
     }
 
-    public RingBuffer() {
+    public RingBuffer(String dataFile) {
+        this.dataFile = dataFile;
         try {
-            boolean rafExits = (new File(TEST_DAT_FILE)).exists();
-            raf = new RandomAccessFile(TEST_DAT_FILE, "rw");
+            boolean rafExits = (new File(this.dataFile)).exists();
+            raf = new RandomAccessFile(this.dataFile, "rw");
             capacity = (raf.length() - headerLen) / recLen;
             if (rafExits) {
                 readHeader();
