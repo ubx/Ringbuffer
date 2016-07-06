@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
+import static java.util.Arrays.copyOfRange;
+
 public class RingBuffer {
 
     public String dataFile;
@@ -153,7 +155,7 @@ public class RingBuffer {
         long tlast = last;
         long mnum = Math.min(count, num);
 
-        // public static byte[] copyOfRange(byte[] original, int from, int to)
+        // todo -- optimize with: public static byte[] copyOfRange(byte[] original, int from, int to)
 
         for (int i = 0; i < mnum; i++) {
             try {
@@ -170,6 +172,48 @@ public class RingBuffer {
         return list.toArray(ret);
     }
 
+    // todo -- optimize with: public static byte[] copyOfRange(byte[] original, int from, int to)
+    public byte[][] peek2(int num) {
+        long tlast = last;
+        int tnum = num;
+        byte[] bax = new byte[0];
+        long tlast2 = 0;
+        int tnum2 = 0;
+        byte[] bax2 = new byte[0];
+
+        long mnum = Math.min(count, num);
+
+        if (tlast >= mnum) {
+            tlast = last - mnum;
+        } else {
+            tlast2 = capacity - tnum2;
+            tnum2 = (int) (mnum - tlast);
+        }
+        for (int i = 0; i < mnum; i++) {
+            try {
+                raf.seek(headerLen + (tlast * recLen));
+                bax = new byte[tnum*recLen];
+                raf.read(bax);
+                if (tlast2 > 0) {
+                    raf.seek(headerLen + (tlast2 * recLen));
+                    bax2 = new byte[tnum2*recLen];
+                    raf.read(bax2);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        byte[][] ret = new byte[bax.length+bax2.length][recLen];
+        for (int i =0; i < tnum; i++) {
+            ret[i] = copyOfRange(bax, i * recLen, (i + 1) * recLen);
+        }
+        for (int i =0; i < tnum2; i++) {
+            ret[i+tnum] = copyOfRange(bax2, i * recLen, (i + 1) * recLen);
+        }
+        // todo copy bax and bax2 to ret
+        return ret;
+    }
+
 
     public void delete() {
         if (count > 0) {
@@ -183,7 +227,7 @@ public class RingBuffer {
         if (count > 0) {
             long mnum = Math.min(count, num);
             count = count - mnum;
-            last = (last < mnum ? capacity : last) - mnum; // // TODO: -- wrong !
+            last = last >= mnum ? last - mnum : capacity - (mnum - last);
             updateHeader();
         }
     }
