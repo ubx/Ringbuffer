@@ -189,26 +189,25 @@ public class RingBuffer {
             tlast2 = capacity - tnum2;
             tnum2 = (int) (mnum - tlast);
         }
-        for (int i = 0; i < mnum; i++) {
-            try {
-                raf.seek(headerLen + (tlast * recLen));
-                bax = new byte[tnum*recLen];
-                raf.read(bax);
-                if (tlast2 > 0) {
-                    raf.seek(headerLen + (tlast2 * recLen));
-                    bax2 = new byte[tnum2*recLen];
-                    raf.read(bax2);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+        try {
+            raf.seek(headerLen + (tlast * recLen));
+            bax = new byte[tnum * recLen];
+            raf.read(bax);
+            if (tlast2 > 0) {
+                raf.seek(headerLen + (tlast2 * recLen));
+                bax2 = new byte[tnum2 * recLen];
+                raf.read(bax2);
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        byte[][] ret = new byte[bax.length+bax2.length][recLen];
-        for (int i =0; i < tnum; i++) {
+
+        byte[][] ret = new byte[(bax.length + bax2.length)/recLen][recLen];
+        for (int i = 0; i < tnum; i++) {
             ret[i] = copyOfRange(bax, i * recLen, (i + 1) * recLen);
         }
-        for (int i =0; i < tnum2; i++) {
-            ret[i+tnum] = copyOfRange(bax2, i * recLen, (i + 1) * recLen);
+        for (int i = 0; i < tnum2; i++) {
+            ret[i + tnum] = copyOfRange(bax2, i * recLen, (i + 1) * recLen);
         }
         // todo copy bax and bax2 to ret
         return ret;
