@@ -155,8 +155,6 @@ public class RingBuffer {
         long tlast = last;
         long mnum = Math.min(count, num);
 
-        // todo -- optimize with: public static byte[] copyOfRange(byte[] original, int from, int to)
-
         for (int i = 0; i < mnum; i++) {
             try {
                 raf.seek(headerLen + (tlast * recLen));
