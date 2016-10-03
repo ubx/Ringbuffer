@@ -28,17 +28,18 @@ import static java.util.Arrays.copyOfRange;
 
 public class RingBuffer {
 
+    public static final int DEFAULT_REC_LEN = 32;
     public String dataFile;
     private long capacity;
     private long count;
     private long last;
 
-    private byte recLen = 20;
-    private static final byte headerLen = 16;
+    private static final byte HEADER_LEN = 20;
+    private int recLen = DEFAULT_REC_LEN;
     private RandomAccessFile raf;
 
 
-    public RingBuffer(String dataFile, long initCapacity) {
+    public RingBuffer(String dataFile, long initCapacity, int recLen) {
         this.dataFile = dataFile;
         capacity = initCapacity;
         try {
@@ -46,6 +47,8 @@ public class RingBuffer {
             setCapacity(capacity);
             count = 0;
             last = 0;
+            this.recLen = recLen;
+            writeRecLen(recLen);
             updateHeader();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -59,12 +62,15 @@ public class RingBuffer {
         try {
             boolean rafExits = (new File(this.dataFile)).exists();
             raf = new RandomAccessFile(this.dataFile, "rw");
-            capacity = (raf.length() - headerLen) / recLen;
+            capacity = (raf.length() - HEADER_LEN) / recLen;
             if (rafExits) {
+                readRecLen();
                 readHeader();
             } else {
                 count = 0;
                 last = 0;
+                recLen = DEFAULT_REC_LEN;
+                writeRecLen(recLen);
                 updateHeader();
             }
         } catch (FileNotFoundException e) {
@@ -86,18 +92,18 @@ public class RingBuffer {
     public void setCapacity(long capacity) {
         try {
             this.capacity = capacity;
-            raf.setLength((capacity * recLen) + headerLen);
+            raf.setLength((capacity * recLen) + HEADER_LEN);
             updateHeader();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public byte getRecLen() {
+    public long getRecLen() {
         return recLen;
     }
 
-    public void setRecLen(byte recLen) {
+    public void setRecLen(int recLen) {
         this.recLen = recLen;
     }
 
@@ -111,7 +117,7 @@ public class RingBuffer {
         try {
             count = Math.min(count + 1, capacity);
             last = (last + 1) % capacity;
-            raf.seek(headerLen + (last * recLen));
+            raf.seek(HEADER_LEN + (last * recLen));
             raf.write(data);
             updateHeader();
         } catch (IOException e) {
@@ -122,7 +128,7 @@ public class RingBuffer {
     public byte[] pop() {
         if (count > 0) {
             try {
-                raf.seek(headerLen + (last * recLen));
+                raf.seek(HEADER_LEN + (last * recLen));
                 byte[] ba = new byte[recLen];
                 raf.read(ba);
                 count = count - 1;
@@ -139,7 +145,7 @@ public class RingBuffer {
     public byte[] peek() {
         if (count > 0) {
             try {
-                raf.seek(headerLen + (last * recLen));
+                raf.seek(HEADER_LEN + (last * recLen));
                 byte[] ba = new byte[recLen];
                 raf.read(ba);
                 return ba;
@@ -157,7 +163,7 @@ public class RingBuffer {
 
         for (int i = 0; i < mnum; i++) {
             try {
-                raf.seek(headerLen + (tlast * recLen));
+                raf.seek(HEADER_LEN + (tlast * recLen));
                 byte[] ba = new byte[recLen];
                 raf.read(ba);
                 list.add(ba);
@@ -188,11 +194,11 @@ public class RingBuffer {
             tnum2 = (int) (mnum - tlast);
         }
         try {
-            raf.seek(headerLen + (tlast * recLen));
+            raf.seek(HEADER_LEN + (tlast * recLen));
             bax = new byte[tnum * recLen];
             raf.read(bax);
             if (tlast2 > 0) {
-                raf.seek(headerLen + (tlast2 * recLen));
+                raf.seek(HEADER_LEN + (tlast2 * recLen));
                 bax2 = new byte[tnum2 * recLen];
                 raf.read(bax2);
             }
@@ -200,7 +206,7 @@ public class RingBuffer {
             e.printStackTrace();
         }
 
-        byte[][] ret = new byte[(bax.length + bax2.length)/recLen][recLen];
+        byte[][] ret = new byte[(bax.length + bax2.length) / recLen][recLen];
         for (int i = 0; i < tnum; i++) {
             ret[i] = copyOfRange(bax, i * recLen, (i + 1) * recLen);
         }
@@ -244,7 +250,7 @@ public class RingBuffer {
 
     private void updateHeader() {
         try {
-            raf.seek(0);
+            raf.seek(4);
             raf.writeLong(count);
             raf.writeLong(last);
         } catch (IOException e) {
@@ -253,10 +259,23 @@ public class RingBuffer {
     }
 
     private void readHeader() throws IOException {
-        raf.seek(0);
+        raf.seek(4);
         count = raf.readLong();
         last = raf.readLong();
 
     }
 
+    private void writeRecLen(int recLen) {
+        try {
+            raf.seek(0);
+            raf.writeInt(recLen);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void readRecLen() throws IOException {
+        raf.seek(0);
+        recLen = raf.readInt();
+    }
 }
