@@ -55,7 +55,7 @@ public class RingBufferTest {
         assertEquals("Last not correct", 0, rb.getLast());
         rb.close();
 
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 234, DEF_REC_LEN, false);
         assertEquals("Capacity not correct", 234, rb.getCapacity());
         assertEquals("Count not correct", 0, rb.getCount());
         assertEquals("Last not correct", 0, rb.getLast());
@@ -67,19 +67,31 @@ public class RingBufferTest {
         assertEquals("Capacity not correct", 1234, rb.getCapacity());
         assertEquals("Count not correct", 0, rb.getCount());
         assertEquals("Last not correct", 0, rb.getLast());
+        byte[] ba = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+        for (int i = 0; i < ba.length; i++) {
+            ba[i] = (byte) (i);
+        }
+        rb.push(ba);
         rb.close();
 
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 1234, DEF_REC_LEN, false);
+        assertEquals("Capacity not correct", 1234, rb.getCapacity());
+        assertEquals("Count not correct", 1, rb.getCount());
+        assertEquals("Last not correct", 1, rb.getLast());
+
+        byte[]ba2 = rb.pop();
         assertEquals("Capacity not correct", 1234, rb.getCapacity());
         assertEquals("Count not correct", 0, rb.getCount());
         assertEquals("Last not correct", 0, rb.getLast());
+        assertEquals("Record size not correct", ba.length, ba2.length);
+        assertArrayEquals("Record content not correct", ba, ba2);
     }
 
     @Test
     public void initialOpenStorageTest() {
         rb = new RingBuffer(TEST_DATA_FILE, 200, DEF_REC_LEN);
         rb.close();
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 200, DEF_REC_LEN, false);
         assertEquals("Capacity not correct", 200, rb.getCapacity());
         assertEquals("Count not correct", 0, rb.getCount());
         assertEquals("Last not correct", 0, rb.getLast());
@@ -87,7 +99,7 @@ public class RingBufferTest {
 
     @Test
     public void setCapacityTest() {
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 70, DEF_REC_LEN);
         rb.setCapacity(4711);
         assertEquals("Capacity not correct", 4711, rb.getCapacity());
         assertEquals("Count not correct", 0, rb.getCount());
@@ -114,7 +126,7 @@ public class RingBufferTest {
     @Test
     public void setRecLenTest() {
         byte[] ba = new byte[50];
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 70, DEF_REC_LEN);
         rb.setCapacity(20);
         rb.setRecLen(ba.length);
         assertEquals("Capacity not correct", 20, rb.getCapacity());
@@ -134,7 +146,7 @@ public class RingBufferTest {
     @Test
     public void pushWith_0_CapacityTest() {
         byte[] ba = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 0, DEF_REC_LEN);
         rb.setRecLen(ba.length);
         assertEquals("Capacity not correct", 0, rb.getCapacity());
         thrown.expect(RuntimeException.class);
@@ -152,7 +164,7 @@ public class RingBufferTest {
         assertEquals("Count not correct", 1, rb.getCount());
         assertEquals("Last not correct", last + 1, rb.getLast());
 
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 100, ba.length, false);
         byte[] ba2 = rb.pop();
         assertEquals("Record size not correct", ba.length, ba2.length);
         assertArrayEquals("Record content not correct", ba, ba2);
@@ -163,7 +175,7 @@ public class RingBufferTest {
         assertEquals("Last not correct", last + 1, rb.getLast());
 
         rb.close();
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 100, ba.length, false);
 
         ba2 = rb.pop();
         assertEquals("Record size not correct", ba2.length, ba3.length);
@@ -180,7 +192,7 @@ public class RingBufferTest {
         long last = rb.getCount();
         rb.close();
 
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 200, ba.length, false);
         byte[] ba2 = rb.peek();
         assertEquals("Count not correct", lastcnt, rb.getCount());
         assertEquals("Last not correct", last, rb.getLast());
@@ -206,7 +218,7 @@ public class RingBufferTest {
         long last = rb.getCount();
         rb.close();
 
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 50, ba.length,false );
         byte[][] baa2 = rb.peek((byte) 5);
         assertEquals("Wrong amount peeked", 5, baa2.length);
 
@@ -219,7 +231,7 @@ public class RingBufferTest {
         }
 
         rb.close();
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 50, ba.length,false);
         baa2 = rb.peek(4);
         assertEquals("Wrong amount peeked", 4, baa2.length);
 
@@ -255,7 +267,7 @@ public class RingBufferTest {
         long last = rb.getCount();
         rb.close();
 
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 50, ba.length, false);
         byte[][] baa2 = rb.peek2((byte) 5);
         assertEquals("Wrong amount peeked", 5, baa2.length);
 
@@ -268,7 +280,7 @@ public class RingBufferTest {
         }
 
         rb.close();
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 50, ba.length, false);
         baa2 = rb.peek2(4);
         assertEquals("Wrong amount peeked", 4, baa2.length);
 
@@ -388,10 +400,52 @@ public class RingBufferTest {
         assertEquals("Last not correct", 18, rb.getLast());
 
         rb.close();
-        rb = new RingBuffer(TEST_DATA_FILE);
+        rb = new RingBuffer(TEST_DATA_FILE, 30, ba.length, false);
         assertEquals("Count not correct", 30-16, rb.getCount());
         assertEquals("Last not correct", 18, rb.getLast());
     }
+
+    @Test
+    public void deletStorageTest() {
+        rb = new RingBuffer(TEST_DATA_FILE, 234, DEF_REC_LEN);
+        assertEquals("Capacity not correct", 234, rb.getCapacity());
+        assertEquals("Count not correct", 0, rb.getCount());
+        assertEquals("Last not correct", 0, rb.getLast());
+        byte[] ba = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+        for (int i = 0; i < ba.length; i++) {
+            ba[i] = (byte) (i);
+        }
+        rb.push(ba);
+        rb.close();
+
+        deleteDtataFile();
+
+        rb = new RingBuffer(TEST_DATA_FILE, 567, DEF_REC_LEN, false);
+        assertEquals("Capacity not correct", 567, rb.getCapacity());
+        assertEquals("Count not correct", 0, rb.getCount());
+        assertEquals("Last not correct", 0, rb.getLast());
+    }
+
+    @Test
+    public void initNewStorageTest() {
+        rb = new RingBuffer(TEST_DATA_FILE, 432, DEF_REC_LEN);
+        assertEquals("Capacity not correct", 432, rb.getCapacity());
+        assertEquals("Count not correct", 0, rb.getCount());
+        assertEquals("Last not correct", 0, rb.getLast());
+        byte[] ba = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+        for (int i = 0; i < ba.length; i++) {
+            ba[i] = (byte) (i);
+        }
+        rb.push(ba);
+        rb.close();
+
+        rb = new RingBuffer(TEST_DATA_FILE, 987, DEF_REC_LEN, true);
+        assertEquals("Capacity not correct", 987, rb.getCapacity());
+        assertEquals("Count not correct", 0, rb.getCount());
+        assertEquals("Last not correct", 0, rb.getLast());
+    }
+
+
 
 
 }

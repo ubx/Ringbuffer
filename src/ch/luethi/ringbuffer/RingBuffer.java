@@ -28,26 +28,57 @@ import static java.util.Arrays.copyOfRange;
 
 public class RingBuffer {
 
-    public static final int DEFAULT_REC_LEN = 32;
+    //public static final int DEFAULT_REC_LEN = 32;
     public String dataFile;
     private long capacity;
     private long count;
     private long last;
 
     private static final byte HEADER_LEN = 20;
-    private int recLen = DEFAULT_REC_LEN;
+    private int recLen;
     private RandomAccessFile raf;
 
 
-    public RingBuffer(String dataFile, long initCapacity, int recLen) {
+    public RingBuffer(String dataFile, long initCapacity, int newRecLen) {
+        createNewBuffer(dataFile, initCapacity, newRecLen);
+    }
+
+    public RingBuffer(String dataFile, long initCapacity, int newRecLen, boolean newBuffer) {
+        if (newBuffer) {
+            createNewBuffer(dataFile, initCapacity, newRecLen);
+        } else {
+            try {
+                boolean rafExits = (new File(dataFile)).exists();
+                if (rafExits) {
+                    raf = new RandomAccessFile(dataFile, "rw");
+                    readRecLen();
+                    long length = raf.length();
+                    capacity = (length - HEADER_LEN) / newRecLen;
+                    if (initCapacity == capacity & newRecLen == getRecLen()) {
+                        readHeader();
+                    } else {
+                        createNewBuffer(dataFile, initCapacity, newRecLen);
+                    }
+                } else {
+                    createNewBuffer(dataFile, initCapacity, newRecLen);
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    private void createNewBuffer(String dataFile, long initCapacity, int newRecLen) {
         this.dataFile = dataFile;
-        capacity = initCapacity;
         try {
             raf = new RandomAccessFile(this.dataFile, "rw");
-            setCapacity(capacity);
+            setRecLen(newRecLen);
+            setCapacity(initCapacity);
             count = 0;
             last = 0;
-            this.recLen = recLen;
             writeRecLen(recLen);
             updateHeader();
         } catch (FileNotFoundException e) {
@@ -57,28 +88,6 @@ public class RingBuffer {
         }
     }
 
-    public RingBuffer(String dataFile) {
-        this.dataFile = dataFile;
-        try {
-            boolean rafExits = (new File(this.dataFile)).exists();
-            raf = new RandomAccessFile(this.dataFile, "rw");
-            capacity = (raf.length() - HEADER_LEN) / recLen;
-            if (rafExits) {
-                readRecLen();
-                readHeader();
-            } else {
-                count = 0;
-                last = 0;
-                recLen = DEFAULT_REC_LEN;
-                writeRecLen(recLen);
-                updateHeader();
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public void close() {
         try {
