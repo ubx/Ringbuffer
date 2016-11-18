@@ -107,6 +107,79 @@ public class RingBufferTest {
     }
 
     @Test
+    public void changeIncCapacityTest() {
+        byte[] ba = new byte[123];
+        rb = new RingBuffer(TEST_DATA_FILE, 20, ba.length);
+        for (int n = 0; n < 10; n++) {
+            rb.push(ba);
+        }
+        rb.changeCapacity(100);
+        assertEquals("Capacity not correct", 100, rb.getCapacity());
+        assertEquals("Count not correct", 10, rb.getCount());
+        assertEquals("Last not correct", 10, rb.getLast());
+
+        for (int n = 0; n < 130; n++) {
+            rb.push(ba);
+        }
+        assertEquals("Count not correct", 100, rb.getCount());
+        assertEquals("Last not correct", 40, rb.getLast());
+
+        rb.changeCapacity(120);
+        assertEquals("Count not correct", 100, rb.getCount());
+        assertEquals("Last not correct", 40, rb.getLast());
+
+        for (int n = 0; n < 110; n++) {
+            rb.push(ba);
+        }
+        assertEquals("Count not correct", 120, rb.getCount());
+        assertEquals("Last not correct", 30, rb.getLast());
+
+        rb.changeCapacity(150);
+        assertEquals("Count not correct", 120, rb.getCount());
+        assertEquals("Last not correct", 30, rb.getLast());
+    }
+
+    @Test
+    public void changeDecCapacityTest() {
+        byte[] ba = new byte[123];
+        rb = new RingBuffer(TEST_DATA_FILE, 200, ba.length);
+        for (int n = 0; n < 10; n++) {
+            rb.push(ba);
+        }
+        rb.changeCapacity(100);
+        assertEquals("Capacity not correct", 100, rb.getCapacity());
+        assertEquals("Count not correct", 10, rb.getCount());
+        assertEquals("Last not correct", 10, rb.getLast());
+    }
+
+    @Test
+    public void changeDecCapacity2Test() {
+        byte[] ba = new byte[123];
+        rb = new RingBuffer(TEST_DATA_FILE, 200, ba.length);
+        for (int n = 0; n < 120; n++) {
+            rb.push(ba);
+        }
+        rb.changeCapacity(100);
+        assertEquals("Capacity not correct", 100, rb.getCapacity());
+        assertEquals("Count not correct", 100, rb.getCount());
+        assertEquals("Last not correct", 100, rb.getLast());
+    }
+
+    @Test
+    public void changeDecCapacity3Test() {
+        byte[] ba = new byte[123];
+        rb = new RingBuffer(TEST_DATA_FILE, 200, ba.length);
+        for (int n = 0; n < 220; n++) {
+            rb.push(ba);
+        }
+        rb.changeCapacity(100);
+        assertEquals("Capacity not correct", 100, rb.getCapacity());
+        assertEquals("Count not correct", 100, rb.getCount());
+        assertEquals("Last not correct", 100, rb.getLast());
+    }
+
+
+    @Test
     public void recLenTest() {
         byte[] ba = new byte[123];
         rb = new RingBuffer(TEST_DATA_FILE, 20, ba.length);

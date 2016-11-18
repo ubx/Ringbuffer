@@ -30,7 +30,7 @@ public class RingBuffer {
 
     //public static final int DEFAULT_REC_LEN = 32;
     public String dataFile;
-    private long capacity;
+    private long capacity = 0;
     private long count;
     private long last;
 
@@ -98,15 +98,66 @@ public class RingBuffer {
     }
 
 
-    public void setCapacity(long capacity) {
+    public void setCapacity(long initCapacity) {
         try {
-            this.capacity = capacity;
+            capacity = initCapacity;
             raf.setLength((capacity * recLen) + HEADER_LEN);
             updateHeader();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+    public void changeCapacity(long newCapacity) {
+        // // TODO: 18.11.2016 truncate / extend buffer
+        try {
+            if (newCapacity > capacity) {
+                raf.setLength((newCapacity * recLen) + HEADER_LEN);
+                long dif = (last - count);
+                if (dif < 0) {
+                    dif = Math.abs(dif);
+                    move(capacity - dif, newCapacity - dif, (int) dif);
+                }
+                capacity = newCapacity;
+                updateHeader();
+            } else if (newCapacity < capacity) {
+                long dif = (last - newCapacity);
+                if (dif > 0) {
+                    dif = Math.min(dif, newCapacity);
+                    move(last - dif, newCapacity - dif, (int) dif);
+                    count = count - dif;
+                    last = newCapacity;
+                } else {
+                    dif = (last - count);
+                    if (dif < 0) {
+                        dif = Math.abs(dif);
+                        dif = Math.min(dif, newCapacity - last - 1);
+                        move(capacity - dif, newCapacity - dif, (int) dif);
+                        count = count - dif;
+                    }
+                }
+                raf.setLength((newCapacity * recLen) + HEADER_LEN);
+                capacity = newCapacity;
+                updateHeader();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void move(long src, long dst, int len) {
+        byte[] ba = new byte[len * recLen];
+        try {
+            raf.seek(HEADER_LEN + (src * recLen));
+            raf.read(ba);
+            raf.seek(HEADER_LEN + (dst * recLen));
+            raf.write(ba);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
 
     public long getRecLen() {
         return recLen;
