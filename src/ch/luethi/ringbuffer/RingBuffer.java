@@ -98,7 +98,7 @@ public class RingBuffer {
     }
 
 
-    public void setCapacity(long initCapacity) {
+    private void setCapacity(long initCapacity) {
         try {
             capacity = initCapacity;
             raf.setLength((capacity * recLen) + HEADER_LEN);
@@ -109,7 +109,6 @@ public class RingBuffer {
     }
 
     public void changeCapacity(long newCapacity) {
-        // // TODO: 18.11.2016 truncate / extend buffer
         try {
             if (newCapacity > capacity) {
                 raf.setLength((newCapacity * recLen) + HEADER_LEN);
@@ -123,20 +122,20 @@ public class RingBuffer {
             } else if (newCapacity < capacity) {
                 long dif = (last - newCapacity);
                 if (dif > 0) {
-                    dif = Math.min(dif, newCapacity);
-                    move(last - dif, newCapacity - dif, (int) dif);
-                    count = count - dif;
-                    last = newCapacity;
+                    count = Math.min(count, newCapacity);
+                    move(last - count, 0, (int) count + 1);
+                    last = count;
                 } else {
                     dif = (last - count);
                     if (dif < 0) {
                         dif = Math.abs(dif);
                         dif = Math.min(dif, newCapacity - last - 1);
                         move(capacity - dif, newCapacity - dif, (int) dif);
-                        count = count - dif;
+                        count = Math.min(count, newCapacity);
                     }
                 }
-                raf.setLength((newCapacity * recLen) + HEADER_LEN);
+                setCapacity(capacity + 1);
+                raf.setLength(((newCapacity + 1) * recLen) + HEADER_LEN);
                 capacity = newCapacity;
                 updateHeader();
             }
